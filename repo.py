@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 from . import config
 from .storage import ObjectStore
-from .objects import Tree, Commit
+from .object import Tree, Commit
 from .index import Index
 
 
