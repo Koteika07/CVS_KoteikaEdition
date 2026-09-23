@@ -17,14 +17,16 @@ class Repository:
             raise RuntimeError("Not a cvs repository. Run 'init' first")
         self.index = Index()
 
-    def init(self):
+    @staticmethod
+    def init():
         """Инициализирует новый репозиторий"""
+        config.CVS_DIR.mkdir(parents=True, exist_ok=True)
         config.OBJECTS_DIR.mkdir(parents=True, exist_ok=True)
         (config.REFS_DIR / "heads").mkdir(parents=True, exist_ok=True)
         (config.REFS_DIR / "tags").mkdir(parents=True, exist_ok=True)
 
-    with open(config.HEAD_FILE, "w") as f:
-        f.write(f'ref: refs/heads/{config.DEFAULT_BRANCH}')
+        with open(config.HEAD_FILE, "w") as f:
+            f.write(f'ref: refs/heads/{config.DEFAULT_BRANCH}')
         print(f"Initialized empty CVS repository in {config.CVS_DIR}")
 
     def add(self, paths: list[str]):
@@ -156,14 +158,14 @@ class Repository:
     def _get_head_commit(self) -> str | None:
         """SHA коммита, на который указывает HEAD (или None)"""
         ref = self._get_head_ref()
-        ref_path = config.MYCVS_DIR / ref
+        ref_path = config.CVS_DIR / ref
         if ref_path.exists():
             return ref_path.read_text().strip()
         return None
 
     def _update_ref(self, ref: str, commit_sha: str):
         """Пишет SHA в файл ссылки, создавая директории"""
-        ref_path = config.MYCVS_DIR / ref
+        ref_path = config.CVS_DIR / ref
         ref_path.parent.mkdir(parents=True, exist_ok=True)
         ref_path.write_text(commit_sha)
 
@@ -190,7 +192,7 @@ class Repository:
     def _clean_working_dir(self):
         """Удаляет все файлы в рабочей директории, кроме .KoteikaGit"""
         for item in Path(".").iterdir():
-            if item.name == config.MYCVS_DIR.name:
+            if item.name == config.CVS_DIR.name:
                 continue
             if item.is_file():
                 item.unlink()

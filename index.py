@@ -36,7 +36,7 @@ class Index:
 
         elif path.is_dir():
             for file_path in path.rglob("*"):
-                if file_path.is_file() and config.MYCVS_DIR not in file_path.parts:
+                if file_path.is_file() and config.CVS_DIR not in file_path.parts:
                     self._add_file(file_path, cwd)
 
     def _add_file(self, file_path: Path, cwd: Path):

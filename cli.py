@@ -43,7 +43,7 @@ def main():
 
     # команда init не требует существующего репозитория
     if args.command == 'init':
-        Repository().init()
+        Repository.init()
         return
 
     # для остальных команд репозиторий должен быть инициализирован
