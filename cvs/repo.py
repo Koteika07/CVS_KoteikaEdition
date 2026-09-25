@@ -11,6 +11,17 @@ from .object import Tree, Commit
 from .index import Index
 
 
+def _make_hidden(path: Path):
+    """Скрывает файл/папку в Windows (Mac / Linux, уже реализовано)"""
+    if os.name != "nt":
+        return
+    FILE_ATTRIBUTE_HIDDEN = 0x02
+    try:
+        ctypes.windll.kernel32.SetFileAttributesW(str(path), FILE_ATTRIBUTE_HIDDEN)
+    except OSError:
+        pass  # не критично, если не удалось
+
+
 class Repository:
     """Высокоуровневая логика работы с репозиторием"""
 
@@ -18,16 +29,6 @@ class Repository:
         if not config.CVS_DIR.exists():
             raise RuntimeError("Not a cvs repository. Run 'init' first")
         self.index = Index()
-
-    def _make_hidden(path: Path):
-        """Скрывает файл/папку в Windows (Mac / Linux, уже реализовано)"""
-        if os.name != "nt":
-            return
-        FILE_ATTRIBUTE_HIDDEN = 0x02
-        try:
-            ctypes.windll.kernel32.SetFileAttributesW(str(path), FILE_ATTRIBUTE_HIDDEN)
-        except OSError:
-            pass  # не критично, если не удалось
 
     @staticmethod
     def init():
