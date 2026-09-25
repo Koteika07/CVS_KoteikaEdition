@@ -26,7 +26,7 @@ class Repository:
         (config.REFS_DIR / "tags").mkdir(parents=True, exist_ok=True)
 
         with open(config.HEAD_FILE, "w") as f:
-            f.write(f'ref: refs/heads/{config.DEFAULT_BRANCH}')
+            f.write(f'ref: refs/heads/{config.DEFAULT_BRANCH}\n')
         print(f"Initialized empty CVS repository in {config.CVS_DIR}")
 
     def add(self, paths: list[str]):
@@ -42,6 +42,11 @@ class Repository:
             print("Nothing to commit (empty index)")
             return
 
+        # проверка на detached HEAD
+        ref = self._get_head_ref()
+        if not ref.startswith("refs/"):
+            print("Error: Cannot commit in detached HEAD state. Checkout a branch first.")
+            return
         # cтроим Tree из плоского индекса
         root_tree_sha = self._build_tree(self.index.entries)
         # получаем хэш родительского коммита
@@ -50,7 +55,6 @@ class Repository:
         commit_obj = Commit(tree_sha=root_tree_sha, message=message, parent_sha=parent_sha)
         commit_sha = ObjectStore.write_object("commit", commit_obj.serialize())
         # обновляем ссылку текущей ветки
-        ref = self._get_head_ref()
         self._update_ref(ref, commit_sha)
 
         print(f"[{ref.split('/')[-1]} {commit_sha[:7]}] {message}")
@@ -62,7 +66,12 @@ class Repository:
             print(f"Error: pathspec '{target}' did not match any known versions")
             return
 
-        # очищаем рабочую директорию
+        # проверка на несохранённые изменения
+        if self._has_uncommitted_changes():
+            print("Error: You have uncommitted changes. Commit or stash them first.")
+            return
+
+        # очищаем рабочую директорию (только отслеживаемые файлы)
         self._clean_working_dir()
         # восстанавливаем файлы из коммита
         _, commit_data = ObjectStore.read_object(target_sha)
@@ -190,14 +199,28 @@ class Repository:
         return (config.REFS_DIR / "tags" / name).exists()
 
     def _clean_working_dir(self):
-        """Удаляет все файлы в рабочей директории, кроме .KoteikaGit"""
-        for item in Path(".").iterdir():
-            if item.name == config.CVS_DIR.name:
-                continue
-            if item.is_file():
-                item.unlink()
-            elif item.is_dir():
-                shutil.rmtree(item)
+        """Удаляет только отслеживаемые файлы из рабочей директории"""
+        current_head = self._get_head_commit()
+        tracked_files = set()
+
+        if current_head:
+            _, data = ObjectStore.read_object(current_head)
+            commit = Commit.deserialize(data)
+            tracked_files = self._get_flat_tree_files(commit.tree_sha)
+
+        # удаляем только отслеживаемые файлы
+        for rel_path in tracked_files:
+            file_path = Path(rel_path)
+            if file_path.exists():
+                file_path.unlink()
+
+        # удаляем пустые директории (рекурсивно снизу вверх)
+        for item in sorted(Path(".").rglob("*"), key=lambda p: len(p.parts), reverse=True):
+            if item.is_dir() and item != config.CVS_DIR:
+                try:
+                    item.rmdir()  # удалит только если директория пуста
+                except OSError:
+                    pass  # директория не пуста, пропускаем
 
     def _restore_tree(self, tree_sha: str, current_path: Path):
         """Рекурсивно восстанавливает файлы и папки из объекта Tree"""

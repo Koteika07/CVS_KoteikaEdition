@@ -31,12 +31,18 @@ class Index:
         path = path.resolve()
         cwd = Path.cwd().resolve()
 
+        # проверяем, что путь находится внутри репозитория
+        try:
+            path.relative_to(cwd)
+        except ValueError:
+            print(f"Error: path '{path}' is outside the repository")
+            return
+
         if path.is_file():
             self._add_file(path, cwd)
-
         elif path.is_dir():
             for file_path in path.rglob("*"):
-                if file_path.is_file() and config.CVS_DIR not in file_path.parts:
+                if file_path.is_file() and config.CVS_DIR.name not in file_path.parts:
                     self._add_file(file_path, cwd)
 
     def _add_file(self, file_path: Path, cwd: Path):

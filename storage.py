@@ -2,6 +2,8 @@
 
 import hashlib  # считаем хеш SHA-256
 import zlib  # сжатие в zlib-формате как в Git
+import tempfile
+import os
 from pathlib import Path
 from . import config
 
@@ -28,10 +30,21 @@ class ObjectStore:
         # пишем только если объекта ещё нет — дедупликация
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
-            with open(path, "wb") as f:
-                # сжимаем всё вместе (заголовок + тело) и пишем сжатое
-                f.write(zlib.compress(store_data))
 
+            # cоздаём временный файл в той же папке
+            fd, tmp_path = tempfile.mkstemp(dir=path.parent)
+            # tmp_path = ".KoteikaGit/objects/ab/tmp_xyz123"
+            try:
+                # пишем данные во временный файл
+                with os.fdopen(fd, "wb") as f:
+                    f.write(zlib.compress(store_data))
+                # атомарно перемещаем временный файл на место целевого
+                os.replace(tmp_path, path)
+            except Exception:
+                # if что-то пошло не так - удаляем временный файл
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+                raise
         return sha
 
     @classmethod

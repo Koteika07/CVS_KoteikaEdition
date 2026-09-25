@@ -18,7 +18,8 @@ class Tree:
 
     @classmethod
     def deserialize(cls, data: bytes) -> "Tree":
-        entries = json.loads(data.decode("utf-8"))
+        raw_entries = json.loads(data.decode("utf-8"))
+        entries = {k: tuple(v) for k, v in raw_entries.items()}
         return cls(entries=entries)
 
 
