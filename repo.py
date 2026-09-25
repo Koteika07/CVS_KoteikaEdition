@@ -222,6 +222,27 @@ class Repository:
                 except OSError:
                     pass  # директория не пуста, пропускаем
 
+    def _has_uncommitted_changes(self) -> bool:
+        """Проверяет, есть ли несохранённые изменения в индексе"""
+        current_head = self._get_head_commit()
+        if not current_head:
+            # if коммитов ещё нет, любые файлы в индексе считаются изменениями
+            return bool(self.index.entries)
+
+        # получаем дерево последнего коммита
+        _, data = ObjectStore.read_object(current_head)
+        commit = Commit.deserialize(data)
+        committed_files = self._get_flat_tree_files(commit.tree_sha)
+
+        # сравниваем индекс с коммитом
+        if set(self.index.entries.keys()) != committed_files:
+            return True
+        # проверяем, совпадают ли хэши
+        for path, sha in self.index.entries.items():
+            if committed_files.get(path) != sha:
+                return True
+        return False
+
     def _restore_tree(self, tree_sha: str, current_path: Path):
         """Рекурсивно восстанавливает файлы и папки из объекта Tree"""
         _, tree_data = ObjectStore.read_object(tree_sha)
