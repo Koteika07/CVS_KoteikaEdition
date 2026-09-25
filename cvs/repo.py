@@ -70,6 +70,10 @@ class Repository:
         commit_sha = ObjectStore.write_object("commit", commit_obj.serialize())
         # обновляем ссылку текущей ветки
         self._update_ref(ref, commit_sha)
+        # индекс описывает только staged-изменения,
+        # а не весь снапшот. после коммита staged-изменений нет
+        self.index.entries.clear()
+        self.index.save()
 
         print(f"[{ref.split('/')[-1]} {commit_sha[:7]}] {message}")
 
@@ -249,7 +253,7 @@ class Repository:
         committed_files = self._get_flat_tree_files(commit.tree_sha)
 
         # сравниваем индекс с коммитом
-        if set(self.index.entries.keys()) != committed_files:
+        if set(self.index.entries.keys()) != set(committed_files.keys()):
             return True
         # проверяем, совпадают ли хэши
         for path, sha in self.index.entries.items():
