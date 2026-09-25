@@ -2,6 +2,8 @@
 
 import shutil
 import time
+import os
+import ctypes
 from pathlib import Path
 from . import config
 from .storage import ObjectStore
@@ -31,7 +33,7 @@ class Repository:
     def init():
         """Инициализирует новый репозиторий"""
         config.CVS_DIR.mkdir(parents=True, exist_ok=True)
-        _make_hidden(config.CVS_DIR)  
+        _make_hidden(config.CVS_DIR)
         config.OBJECTS_DIR.mkdir(parents=True, exist_ok=True)
         (config.REFS_DIR / "heads").mkdir(parents=True, exist_ok=True)
         (config.REFS_DIR / "tags").mkdir(parents=True, exist_ok=True)
