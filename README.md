@@ -105,20 +105,21 @@ python -m cvs checkout v1.0
 CVS_KoteikaEdition/
 ├── cvs/
 │   ├── __init__.py            # Инициализация пакета
-│   ├── __main__.py            # Точка входа (для запуска через python -m)
+│   ├── __main__.py            # Точка входа (python -m)
 │   ├── config.py              # Инфраструктурный слой: пути и константы
 │   ├── storage.py             # Инфраструктурный слой: Object Store (zlib, sha256)
-│   ├── object.py              # Доменный слой: Модели данных (Tree, Commit)
-│   ├── index.py               # Доменный слой: Управление Staging Area
-│   ├── repo.py                # Доменный слой: Оркестратор бизнес-логики
-│   └── cli.py                 # Слой представления: CLI интерфейс (argparse)
+│   ├── object.py              # Доменный слой: модели данных (Tree, Commit)
+│   ├── index.py               # Доменный слой: управление Staging Area
+│   ├── repo.py                # Доменный слой: оркестратор бизнес-логики
+│   └── cli.py                 # Слой представления: CLI (argparse)
 ├── tests/
 │   ├── conftest.py            # Фикстуры для изоляции тестов (tmp_path)
-│   ├── test_objects.py        # Тесты сериализации моделей
+│   ├── test_objects.py        # Тесты сериализации моделей (Tree, Commit)
 │   ├── test_storage.py        # Тесты хранилища и дедупликации
-│   └── test_repo.py           # Интеграционные тесты (commit, checkout)
-├── README.md                  # Документация проекта
-└── requirements.txt           # Зависимости для тестирования
+│   ├── test_index.py          # Тесты Staging Area (Index) в изоляции
+│   └── test_repo.py           # Интеграционные тесты (init, add, commit, checkout, branch, tag, log)
+├── README.md
+└── requirements.txt
 ```
 
 ## Тестирование
