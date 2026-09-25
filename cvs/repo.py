@@ -282,3 +282,21 @@ class Repository:
                 self._print_tree_files(sha, path)
             else:
                 print(f"  {path}")
+
+    def _get_flat_tree_files(self, tree_sha: str) -> dict[str, str]:
+        """Рекурсивно разворачивает Tree в плоский словарь {path: blob_sha}"""
+        result: dict[str, str] = {}
+        self._flatten_tree(tree_sha, "", result)
+        return result
+
+    def _flatten_tree(self, tree_sha: str, prefix: str, out: dict[str, str]):
+        """Вспомогательный рекурсивный обход дерева"""
+        _, tree_data = ObjectStore.read_object(tree_sha)
+        tree = Tree.deserialize(tree_data)
+
+        for name, (obj_type, sha) in tree.entries.items():
+            path = f"{prefix}/{name}" if prefix else name
+            if obj_type == "tree":
+                self._flatten_tree(sha, path, out)
+            else:
+                out[path] = sha
