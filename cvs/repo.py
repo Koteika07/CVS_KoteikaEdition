@@ -17,10 +17,21 @@ class Repository:
             raise RuntimeError("Not a cvs repository. Run 'init' first")
         self.index = Index()
 
+    def _make_hidden(path: Path):
+        """Скрывает файл/папку в Windows (Mac / Linux, уже реализовано)"""
+        if os.name != "nt":
+            return
+        FILE_ATTRIBUTE_HIDDEN = 0x02
+        try:
+            ctypes.windll.kernel32.SetFileAttributesW(str(path), FILE_ATTRIBUTE_HIDDEN)
+        except OSError:
+            pass  # не критично, если не удалось
+
     @staticmethod
     def init():
         """Инициализирует новый репозиторий"""
         config.CVS_DIR.mkdir(parents=True, exist_ok=True)
+        _make_hidden(config.CVS_DIR)  
         config.OBJECTS_DIR.mkdir(parents=True, exist_ok=True)
         (config.REFS_DIR / "heads").mkdir(parents=True, exist_ok=True)
         (config.REFS_DIR / "tags").mkdir(parents=True, exist_ok=True)
